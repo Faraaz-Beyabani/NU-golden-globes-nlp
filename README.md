@@ -1,6 +1,7 @@
 # Golden Globes 2020 Natural Language Processing
 
 On Windows, run `win_setup.ps1` with Powershell to set up the proper virtual environment.
+
 On Mac/Linux, run `source ./unix_setup.sh`.
 
 When done, type `pip freeze > requirements.txt` (if any new pip packages were added) then `deactivate` to exit the virtual environment.
