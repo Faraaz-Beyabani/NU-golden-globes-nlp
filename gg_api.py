@@ -51,7 +51,6 @@ def main():
     and then run gg_api.main(). This is the second thing the TA will
     run when grading. Do NOT change the name of this function or
     what it returns.'''
-    # Your code here
     return
 
 if __name__ == '__main__':
