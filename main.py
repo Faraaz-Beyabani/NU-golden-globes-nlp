@@ -2,13 +2,14 @@ import re
 import json
 import nltk
 
-ignore = ['Golden', 'Globes', 'Globe', 'Award', 'Best']
+ignore = ['Golden', 'Globes', 'Globe']
 
 host_count = {}
-award_template = {"Presenters": None, "Nominees": [], "Winner": None}
+award_template = {"Presenters": [], "Nominees": [], "Winner": None}
 
 def main():
     nltk.download('averaged_perceptron_tagger')
+
     process_tweets()
 
 def process_tweets(filepath = "./data/gg2020.json"):
@@ -19,8 +20,7 @@ def process_tweets(filepath = "./data/gg2020.json"):
             tweet = json.loads(str(line))
             get_host(tweet)
         
-    hosts = [k for k, _ in sorted(host_count.items(), key=lambda item: item[1], reverse=True)]
-    hosts = hosts[:2]
+    hosts = [k for k, _ in sorted(host_count.items(), key=lambda item: item[1], reverse=True)][:2]
     print(hosts)
 
 def get_host(tweet):
