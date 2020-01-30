@@ -24,31 +24,38 @@ class GoldenGlobesParser:
     tweetized_awards = []
     categorized_winners = defaultdict(dict)
 
-    def __init__(self, year = 2020):
-        self.year = year
+    def __init__(self, year = None):
+        self.year = year or 2020
+
+    def parse_json(self, file):
+        tweets = []
+        try:
+            tweets = json.load(file)
+        except:
+            print(f"./data/gg{self.year}.json is not in JSON format!")
+        finally:
+            return tweets
 
     def process_tweets(self):
         nltk.download('averaged_perceptron_tagger')
 
-        with open(f"./data/gg{self.year}.json", encoding="utf8") as f:
-            try:
-                self.tweets = json.load(f)
-            except:
-                print(f"./data/gg{self.year}.json is not in JSON format!")
-                self.tweets = []
+        with open(f"./data/gg{self.year}.json", encoding="utf8") as f:    
+            self.tweets = self.parse_json(f)
+
+        if len(self.tweets) == 0:
+            with open(f"./data/gg{self.year}.json", encoding="utf8") as f:
                 for line in f:
                     self.tweets.append(json.loads(str(line)))
 
-        # self.get_host(self.tweets)
+        # self.extract_host(self.tweets)
         # self.get_awards(self.tweets)
 
-        # self.process_awards()
-        # self.categorize_awards()
+        self.process_awards()
+        self.extract_winners()
         # self.get_presenters(self.tweets)
-        # self.get_winners(self.tweets)
 
     def process_awards(self):
-        ignore = ['award', 'motion', 'performance', 'picture', 'limited', 'original', 'series', 'series,']#, " -", ' by', " an", ' in a', ' in',  ' a', ' or', ' made', ' for']
+        ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series', 'series,']#, " -", ' by', " an", ' in a', ' in',  ' a', ' or', ' made', ' for']
         special = ['best', 'song']
         replace = {'television': 'tv'}
         for award in self.OFFICIAL_AWARDS_1819:
@@ -72,30 +79,44 @@ class GoldenGlobesParser:
             self.tweetized_awards.append(curr)
         # print(self.tweetized_awards)
       
-    def categorize_awards(self):
+    def extract_winners(self):
         tknzr = nltk.tokenize.casual.TweetTokenizer(strip_handles=True)
+        award_words = set(['tv', 'movie'])
+        for award in self.OFFICIAL_AWARDS_1819:
+            for word in award.split():
+                award_words.add(word)
 
         for award in self.tweetized_awards:
             self.categorized_winners[award] = defaultdict(int)
             for tweet in self.tweets:
                 if self.match_award(tweet, award):
-                    if ('actor' in tweet['text'] and 'actor' not in award) or ('actress' in tweet['text'] and 'actress' not in award) or ('tv' in tweet['text'] and 'tv' not in award):
+                    if ('actor' in tweet['text'].lower() and 'actor' not in award) or ('actress' in tweet['text'].lower() and 'actress' not in award) or ('tv' in tweet['text'].lower() and 'tv' not in award):
                         continue
 
                     tags = nltk.pos_tag(tknzr.tokenize(tweet["text"]))
                     for i in range(len(tags)-1):
                         first_tag = tags[i][1] == "NNP"
-                        first_word = tags[i][0]
+                        first_word = tags[i][0].lower()
                         sec_tag = tags[i+1][1] == "NNP"
-                        sec_word = tags[i+1][0]
-                        if first_tag and sec_tag and first_word.lower() not in self.ignore and sec_word.lower() not in self.ignore:
+                        sec_word = tags[i+1][0].lower()
+                        if '#' in first_word:
+                            first_word = first_word[1:]
+                        if '#' in sec_word:
+                            sec_word = sec_word[1:]
+
+                        if first_word in award_words or sec_word in award_words:
+                            continue
+
+                        if first_tag and sec_tag and first_word not in self.ignore and sec_word not in self.ignore:
                             maybe_name = f"{first_word} {sec_word}"
+                            self.categorized_winners[award][first_word] += 1
+                            self.categorized_winners[award][sec_word] += 1
                             self.categorized_winners[award][maybe_name] += 1
         
             obsolete = []
             for name in self.categorized_winners[award].keys():
                 for other_name in self.categorized_winners[award].keys():
-                    if name == other_name:
+                    if name == other_name or name in obsolete or other_name in obsolete:
                         continue
                 
                 diff = nltk.distance.edit_distance(name, other_name, transpositions=True)
@@ -115,17 +136,19 @@ class GoldenGlobesParser:
                 if n > best_n:
                     best_n = n
                     best_c = c
+                if n == best_n and len(c) > len(best_c):
+                    best_c = c
             print(f"{best_c} won {k} with {best_n} occurrences\n")
 
     def match_award(self, tweet, award):
         for word in award.split():
-            if word not in tweet["text"]:
+            if word not in tweet["text"].lower():
                 return False
 
         return True
         
 
-    def get_host(self, tweets):
+    def extract_host(self, tweets):
         host_count = {}
         host_plural = 0
         host_tweets = 0
@@ -143,10 +166,10 @@ class GoldenGlobesParser:
                 tags = nltk.pos_tag(tknzr.tokenize(text))
                 for i in range(len(tags)-1):
                     first_tag = tags[i][1] == "NNP"
-                    first_word = tags[i][0]
+                    first_word = tags[i][0].lower()
                     sec_tag = tags[i+1][1] == "NNP"
-                    sec_word = tags[i+1][0]
-                    if first_tag and sec_tag and first_word.lower() not in self.ignore and sec_word.lower() not in self.ignore:
+                    sec_word = tags[i+1][0].lower()
+                    if first_tag and sec_tag and first_word not in self.ignore and sec_word not in self.ignore:
                         maybe_name = f"{first_word} {sec_word}"
                         if maybe_name in host_count.keys():
                             host_count[maybe_name] += 1
@@ -158,6 +181,8 @@ class GoldenGlobesParser:
             self.hosts = hosts[:1]
         else:
             self.hosts = hosts[:2]
+
+        print(self.hosts)
     
     def get_awards(self, tweets):
         dic = {}
@@ -176,7 +201,7 @@ class GoldenGlobesParser:
                 self.awards.append(dic[key][0])
 
         print(self.awards)
-        print(len(self.awards))
+        # print(len(self.awards))
     
     def get_presenters(self, tweets): 
         present_count = {"presenters": {}, "present_plural": 0, "present_tweets": 0}
@@ -196,64 +221,8 @@ class GoldenGlobesParser:
             # if should_ignore:
             #     continue
             
-            print(text)
-
-        
-
-        
+            # print(text) 
 
 if __name__=="__main__":
     dog = GoldenGlobesParser()
     dog.process_tweets()
-
-
-
-
-
-    # for tweet in tweets:
-    #         text = tweet['text']
-
-    #         best_score = float("-inf")
-    #         best_award = ""
-    #         best_index = 0
-
-    #         match = re.search(r'\(?((cecil)|(best)).*((award)|(drama)|(film)|(musical)|(motion picture)|(television)|(comedy))\)?', text.lower())
-
-    #         if not match:
-    #             continue
-            
-    #         for i, award in enumerate(self.tweetized_awards):
-    #             score = 0
-    #             award_key = ''.join(c for c in award if c.isalpha() or c==' ').split(' ')
-
-    #             for w in award_key:
-    #                 if w in match.group():
-    #                     score += 1
-
-    #             if score > best_score:
-    #                 best_score = score
-    #                 best_award = award
-    #                 best_index = i
-
-    #         if ' present' in text:
-    #             present_count[self.OFFICIAL_AWARDS_1819[best_index]]["present_tweets"] += 1
-    #             if ' and ' in text:
-    #                 present_count[self.OFFICIAL_AWARDS_1819[best_index]]["present_plural"] += 1
-
-    #             tags = nltk.pos_tag(tknzr.tokenize(text))
-    #             for i in range(len(tags)-1):
-    #                 first_tag = tags[i][1] == "NNP"
-    #                 first_word = tags[i][0]
-    #                 sec_tag = tags[i+1][1] == "NNP"
-    #                 sec_word = tags[i+1][0]
-    #                 if first_tag and sec_tag and first_word.lower() not in self.ignore and sec_word.lower() not in self.ignore:
-    #                     maybe_name = f"{first_word} {sec_word}"
-    #                     if maybe_name in present_count[self.OFFICIAL_AWARDS_1819[best_index]]["presenters"].keys():
-    #                         present_count[self.OFFICIAL_AWARDS_1819[best_index]]["presenters"][maybe_name] += 1
-    #                     else:
-    #                         present_count[self.OFFICIAL_AWARDS_1819[best_index]]["presenters"][maybe_name] = 1
-
-    #     # for k in present_count.keys():
-    #     #     present_count[k]["presenters"] = sorted(present_count[k]["presenters"].items(), key=lambda item: item[1], reverse=True)[:10]
-
-    #     print(present_count)
