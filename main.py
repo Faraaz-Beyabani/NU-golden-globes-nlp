@@ -31,20 +31,25 @@ class GoldenGlobesParser:
         nltk.download('averaged_perceptron_tagger')
 
         with open(f"./data/gg{self.year}.json", encoding="utf8") as f:
-            for line in f:
-                self.tweets.append(json.loads(str(line)))
+            try:
+                self.tweets = json.load(f)
+            except:
+                print(f"./data/gg{self.year}.json is not in JSON format!")
+                self.tweets = []
+                for line in f:
+                    self.tweets.append(json.loads(str(line)))
 
         # self.get_host(self.tweets)
         # self.get_awards(self.tweets)
 
-        self.process_awards()
-        self.categorize_awards()
+        # self.process_awards()
+        # self.categorize_awards()
         # self.get_presenters(self.tweets)
         # self.get_winners(self.tweets)
 
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'limited', 'original', 'series', 'series,']#, " -", ' by', " an", ' in a', ' in',  ' a', ' or', ' made', ' for']
-        special = ['best', 'song', 'b.']
+        special = ['best', 'song']
         replace = {'television': 'tv'}
         for award in self.OFFICIAL_AWARDS_1819:
             curr = award
@@ -198,7 +203,7 @@ class GoldenGlobesParser:
         
 
 if __name__=="__main__":
-    dog = GoldenGlobesParser(2020)
+    dog = GoldenGlobesParser()
     dog.process_tweets()
 
 
