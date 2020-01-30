@@ -3,6 +3,7 @@ import nltk
 import re
 from nltk.corpus import state_union
 from nltk.tokenize import PunktSentenceTokenizer
+from nltk import distance
 from collections import defaultdict
 
 class GoldenGlobesParser:
@@ -42,9 +43,9 @@ class GoldenGlobesParser:
         # self.get_winners(self.tweets)
 
     def process_awards(self):
-        ignore = ['award', 'motion', 'performance', 'picture', 'limited', 'original']#, " -", ' by', " an", ' in a', ' in',  ' a', ' or', ' made', ' for']
+        ignore = ['award', 'motion', 'performance', 'picture', 'limited', 'original', 'series', 'series,']#, " -", ' by', " an", ' in a', ' in',  ' a', ' or', ' made', ' for']
         special = ['best', 'song', 'b.']
-        replace = {'television': 'tv', 'series,':'series'}
+        replace = {'television': 'tv'}
         for award in self.OFFICIAL_AWARDS_1819:
             curr = award
             temp = curr.split()
@@ -73,6 +74,9 @@ class GoldenGlobesParser:
             self.categorized_winners[award] = defaultdict(int)
             for tweet in self.tweets:
                 if self.match_award(tweet, award):
+                    if ('actor' in tweet['text'] and 'actor' not in award) or ('actress' in tweet['text'] and 'actress' not in award) or ('tv' in tweet['text'] and 'tv' not in award):
+                        continue
+
                     tags = nltk.pos_tag(tknzr.tokenize(tweet["text"]))
                     for i in range(len(tags)-1):
                         first_tag = tags[i][1] == "NNP"
@@ -82,6 +86,22 @@ class GoldenGlobesParser:
                         if first_tag and sec_tag and first_word.lower() not in self.ignore and sec_word.lower() not in self.ignore:
                             maybe_name = f"{first_word} {sec_word}"
                             self.categorized_winners[award][maybe_name] += 1
+        
+            obsolete = []
+            for name in self.categorized_winners[award].keys():
+                for other_name in self.categorized_winners[award].keys():
+                    if name == other_name:
+                        continue
+                
+                diff = nltk.distance.edit_distance(name, other_name, transpositions=True)
+                if diff < 7:
+                    self.categorized_winners[award][name] += self.categorized_winners[award][other_name]
+                    if other_name not in obsolete:
+                        obsolete.append(other_name)
+
+            for obs in obsolete:
+                del self.categorized_winners[award][obs]
+
 
         for k,v in self.categorized_winners.items():
             best_n = float('-inf')
@@ -172,9 +192,6 @@ class GoldenGlobesParser:
             #     continue
             
             print(text)
-
-    def get_winners(self, tweets):
-        pass
 
         
 
