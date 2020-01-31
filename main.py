@@ -16,7 +16,7 @@ class GoldenGlobesParser:
     winners = {}
 
     award_template = {"Presenters": [], "Nominees": [], "Winner": None}
-    ignore = ['golden', 'globes', 'globe']
+    ignore = ['golden', 'globes', 'globe', 'goldenglobes', '#goldenglobes']
         
     # THIS LIST IS NOT RETURNED. IT IS USED TO FIND PRESENTERS, NOMINEES, AND WINNERS FOR ALL THE AWARDS IN ACCORDANCE WITH THE PROJECT GUIDELINES
     # WE ARE USING THIS LIST TO AVOID CASCADING ERROR
@@ -38,6 +38,7 @@ class GoldenGlobesParser:
 
     def process_tweets(self):
         nltk.download('averaged_perceptron_tagger')
+        punc = ['.', ',', '-', '\'', '"']
 
         with open(f"./data/gg{self.year}.json", encoding="utf8") as f:    
             self.tweets = self.parse_json(f)
@@ -46,6 +47,11 @@ class GoldenGlobesParser:
             with open(f"./data/gg{self.year}.json", encoding="utf8") as f:
                 for line in f:
                     self.tweets.append(json.loads(str(line)))
+
+        for i in range(len(self.tweets)):
+            for p in punc:
+                if p in self.tweets[i]["text"]:
+                    self.tweets[i]["text"] = self.tweets[i]["text"].replace(p, '')
 
         # self.extract_host(self.tweets)
         # self.get_awards(self.tweets)
@@ -80,14 +86,16 @@ class GoldenGlobesParser:
         # print(self.tweetized_awards)
       
     def extract_winners(self):
+        unigrams = defaultdict(dict)
         tknzr = nltk.tokenize.casual.TweetTokenizer(strip_handles=True)
-        award_words = set(['tv', 'movie'])
+        award_words = set(['tv', 'movie', 'wins', 'won'])
         for award in self.OFFICIAL_AWARDS_1819:
             for word in award.split():
                 award_words.add(word)
 
         for award in self.tweetized_awards:
             self.categorized_winners[award] = defaultdict(int)
+            unigrams[award] = defaultdict(int)
             for tweet in self.tweets:
                 if self.match_award(tweet, award):
                     if ('actor' in tweet['text'].lower() and 'actor' not in award) or ('actress' in tweet['text'].lower() and 'actress' not in award) or ('tv' in tweet['text'].lower() and 'tv' not in award):
@@ -99,46 +107,41 @@ class GoldenGlobesParser:
                         first_word = tags[i][0].lower()
                         sec_tag = tags[i+1][1] == "NNP"
                         sec_word = tags[i+1][0].lower()
-                        if '#' in first_word:
-                            first_word = first_word[1:]
-                        if '#' in sec_word:
-                            sec_word = sec_word[1:]
 
                         if first_word in award_words or sec_word in award_words:
                             continue
 
-                        if first_tag and sec_tag and first_word not in self.ignore and sec_word not in self.ignore:
+                        if first_tag and first_word not in self.ignore and sec_tag and sec_word not in self.ignore:
                             maybe_name = f"{first_word} {sec_word}"
-                            self.categorized_winners[award][first_word] += 1
-                            self.categorized_winners[award][sec_word] += 1
                             self.categorized_winners[award][maybe_name] += 1
-        
-            obsolete = []
-            for name in self.categorized_winners[award].keys():
-                for other_name in self.categorized_winners[award].keys():
-                    if name == other_name or name in obsolete or other_name in obsolete:
-                        continue
-                
-                diff = nltk.distance.edit_distance(name, other_name, transpositions=True)
-                if diff < 7:
-                    self.categorized_winners[award][name] += self.categorized_winners[award][other_name]
-                    if other_name not in obsolete:
-                        obsolete.append(other_name)
-
-            for obs in obsolete:
-                del self.categorized_winners[award][obs]
-
+                            unigrams[award][first_word] += 1
+                                
+        best_bn = None
+        best_bc = None
+        best_un = None
+        best_uc = None
 
         for k,v in self.categorized_winners.items():
-            best_n = float('-inf')
-            best_c = None
+            best_bn = float('-inf')
+            best_bc = None
             for c, n in v.items():
-                if n > best_n:
-                    best_n = n
-                    best_c = c
-                if n == best_n and len(c) > len(best_c):
-                    best_c = c
-            print(f"{best_c} won {k} with {best_n} occurrences\n")
+                # if c == "tom hanks":# or c == "hanks" or c == "tom":
+                #     print(f"{c}: {n}")
+                if n > best_bn:
+                    best_bn = n
+                    best_bc = c
+
+            best_un = float('-inf')
+            best_uc = None
+            for uc, un in unigrams[k].items():
+                if un > best_un:
+                    best_un = un
+                    best_uc = uc
+            
+            print(f"{best_bc} won {k} with {best_bn} occurrences")
+            print(f"{best_uc} won {k} with {best_un} occurrences")
+
+        
 
     def match_award(self, tweet, award):
         for word in award.split():
