@@ -2,7 +2,6 @@ import json
 import nltk
 import re
 import time
-
 from nltk.tokenize import sent_tokenize, word_tokenize
 from collections import defaultdict
 
@@ -96,7 +95,7 @@ class GoldenGlobesParser:
             for word in award.split():
                 if len(word) > 3:
                     self.award_words.add(word)
-
+                    
     def match_phrase(self, text, phrase):
         spec = ['actor', 'actress', 'tv']
         text_lower = text.lower()
