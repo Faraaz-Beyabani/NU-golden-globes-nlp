@@ -63,30 +63,30 @@ class GoldenGlobesParser:
         # self.extract_host()
         # self.get_awards()
         self.extract_winners()
-        self.extract_presenters()
+        # self.extract_presenters()
 
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series,']
         special = ['best', 'song']
-        replace = {'television': 'tv'}
+        replace = {'television': 'tv', 'musical': '', 'comedy': 'musical/comedy'}
         for original in self.OFFICIAL_AWARDS_1819:
             award = original
-            temp = award.split()
+            split_original = award.split()
 
-            for i, w in enumerate(temp):
+            for i, w in enumerate(split_original):
                 word = w.lower()
-                if word in temp[:i]:
-                    temp[i] = ""
+                if word in split_original[:i]:
+                    split_original[i] = ""
 
                 if word not in special:
                     if len(word) <= 4 or word in ignore:
-                        temp[i] = ""
+                        split_original[i] = ""
 
                 for k,v in replace.items():
                     if word == k:
-                        temp[i] = v
+                        split_original[i] = v
 
-            award = ' '.join([x for x in temp if x])
+            award = ' '.join([x for x in split_original if x])
 
             self.tweetized_awards[original] = award
 
@@ -100,8 +100,13 @@ class GoldenGlobesParser:
         spec = ['actor', 'actress', 'tv']
         text_lower = text.lower()
         for word in phrase.split():
-            if word not in text_lower:
-                return False
+            if '/' in word:
+                subwords = word.split('/')
+                if not any(sw in text_lower for sw in subwords):
+                    return False
+            else:
+                if word not in text_lower:
+                    return False
 
         for s in spec:
             if s in text_lower and s not in phrase:
@@ -186,7 +191,8 @@ class GoldenGlobesParser:
 
                 if any(p in award for p in person_key):
                     if not chunked:
-                        chunked = nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
+                        # chunked = nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
+                        chunked = nltk.ne_chunk(nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text)))
 
                     for chunk in chunked:
                         if len(chunk) > 3:
@@ -228,8 +234,9 @@ class GoldenGlobesParser:
         #                 aw_map[award][person_b] = 0
 
         for original, award in self.tweetized_awards.items():
-            # print(original)
+            print(f'{original} -> {award}')
             if not aw_map[award]:
+                print('\n')
                 continue
             sorted_map = {e:f for e, f in sorted(aw_map[award].items(), key=lambda item: len(item[0]))}
             for person,count_a in sorted_map.items():
@@ -242,7 +249,6 @@ class GoldenGlobesParser:
                         break
                     aw_map[award][person] += p_count
 
-            # print(f'{original} -> {award}')
             sorted_award = [x[0] for x in sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)]
             self.winners[original] = sorted_award[0]
             w_words = self.winners[original].split()
@@ -259,11 +265,11 @@ class GoldenGlobesParser:
                 if len(self.nominees[original]) >= 5:
                     break
 
-            while len(self.nominees[original]) < 5:
+            while len(self.nominees[original]) < 5 and 'cecil' not in award:
                 self.nominees[original].append('')
 
-            # print(f"The winner was {self.winners[original]}")
-            # print(f"The nominees were {self.nominees[original]}\n")
+            print(f"The winner was {self.winners[original]}")
+            print(f"The nominees were {self.nominees[original]}\n")
 
     def extract_presenters(self):
         p_map = {}
@@ -277,10 +283,14 @@ class GoldenGlobesParser:
                 if not (' present' in text and self.match_phrase(text, award)):
                     continue
                 
-                text = text.split(' present')[0]
+                if ' presented by' in text:
+                    text = text.split(' presented by')[1]
+                else:
+                    text = text.split(' present')[0]
 
                 if not chunked:
-                    chunked = nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
+                    # chunked = nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
+                    chunked = nltk.ne_chunk(nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text)))
 
                 for chunk in chunked:
                     if len(chunk) > 3:
