@@ -55,12 +55,30 @@ class GoldenGlobesParser:
                 for line in f:
                     self.tweets.append(json.loads(str(line)))
 
+        # for tweet in self.tweets:
+        #     text = tweet['text']
+        #     if '#' in text:
+        #         hashtag = re.findall(r'\B#\w\w*', text)
+        #         if hashtag:
+        #             # print(hashtag)
+        #             for h in hashtag:
+        #                 phrase = h[1:]
+        #                 indices = []
+        #                 for i in range(len(phrase) - 1):
+        #                     if phrase[i].islower() and phrase[i+1].isupper():
+        #                         indices.append(i+1)
+        #                 clone = list(phrase)
+        #                 for i in indices[::-1]:
+        #                     clone.insert(i, ' ')
+        #                 tweet['text'].replace(h, ''.join(clone))
+        #                 print(tweet['text'])
+
         self.process_awards()
 
-        self.extract_host()
-        self.extract_awards()
+        # self.extract_host()
+        # self.extract_awards()
         self.extract_winners()
-        # self.extract_prenom()
+        self.extract_prenom()
 
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series,']
@@ -176,7 +194,7 @@ class GoldenGlobesParser:
         
         for i, tweet in enumerate(self.tweets):
 
-            if not i % 10:
+            if i % 10 == 0:
                 continue
 
             chunked = None
@@ -190,7 +208,6 @@ class GoldenGlobesParser:
 
                 if any(p in award for p in person_key):
                     if not chunked:
-                        # chunked = nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
                         chunked = nltk.ne_chunk(nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text)))
 
                     for chunk in chunked:
@@ -239,61 +256,21 @@ class GoldenGlobesParser:
 
     def extract_prenom(self):
         p_map = {}
-        for award in self.tweetized_awards.values():
+        # n_map = {}
+        for original, award in self.tweetized_awards.items():
             p_map[award] = defaultdict(int)
+            # n_map[award] = defaultdict(int)
 
         for tweet in self.tweets:
             text = tweet['text']
             chunked = None
-            for original, award in self.tweetized_awards.items():
-                if not (' present' in text and self.match_phrase(text, award)):
-                    continue
-                
-                if ' presented by' in text:
-                    text = text.split(' presented by')[1]
-                else:
-                    text = text.split(' present')[0]
+            regexed = []
 
-                if not chunked:
-                    # chunked = nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(text)))
-                    chunked = nltk.ne_chunk(nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text)))
 
-                for chunk in chunked:
-                    if len(chunk) > 3:
-                        continue
-
-                    if type(chunk) == nltk.tree.Tree:
-                        if chunk.label() == 'PERSON':
-                            maybe_name = ' '.join([c[0] for c in chunk])
-                            check = maybe_name.lower()
-                            if any(i in check for i in self.ignore) or any(aw in check for aw in self.award_words) or any([self.match_phrase(check, n) for n in self.nominees[original]]):
-                                continue
-
-                            p_map[award][maybe_name] += 1
-
-        for original, award in self.tweetized_awards.items():
-            print(award)
-            if not p_map[award]:
-                print('\n')
-                continue
-            sorted_map = {e:f for e, f in sorted(p_map[award].items(), key=lambda item: len(item[0]))}
-            for person,count_a in sorted_map.items():
-                pa_words = person.split()
-                if len(pa_words) == 1:
-                    continue
-                for p in pa_words:
-                    p_count = p_map[award].get(p)
-                    if not p_count:
-                        break
-                    p_map[award][person] += p_count
-
-            sorted_award = sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)
-            print(sorted_award)
-            print('\n')
-            # self.presenters[original] = sorted_award[0]
+            
 
 if __name__=="__main__":
     start_time = time.time()
-    dog = GoldenGlobesParser(2015)
+    dog = GoldenGlobesParser(2020)
     dog.process_tweets()
     print(f"{time.time() - start_time} seconds")
