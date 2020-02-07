@@ -55,6 +55,10 @@ class GoldenGlobesParser:
                 for line in f:
                     self.tweets.append(json.loads(str(line)))
 
+        for tweet in self.tweets:
+            # print('&')
+            tweet['text'] = tweet['text'].replace('&amp;', 'and').replace('RT ','').replace('#','@')
+
         # for tweet in self.tweets:
         #     text = tweet['text']
         #     if '#' in text:
@@ -255,22 +259,46 @@ class GoldenGlobesParser:
             print(f"The winner was {self.winners[original]}")
 
     def extract_prenom(self):
-        p_map = {}
+        p_map = defaultdict(dict)
         # n_map = {}
         for original, award in self.tweetized_awards.items():
-            p_map[award] = defaultdict(int)
+            p_map[original] = defaultdict(int)
             # n_map[award] = defaultdict(int)
 
         for tweet in self.tweets:
-            text = tweet['text']
+            text = tweet['text'].replace(',',' and')
+            # text = ''.join(c for c in text if c.isalpha() or c == ' ')
             chunked = None
             regexed = []
 
+            if 'present' in text:
+                for a, w in self.winners.items():
+                    t_a = self.tweetized_awards[a]
+                    if self.match_phrase(text, w.replace(' ', '/')) or self.match_phrase(text, t_a):
+
+                        print(text)
+                        p_t = nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text))
+                        name = []
+                        for i in range(len(p_t)-1):
+                            if p_t[i][1] == "NNP" or p_t[i][0] == 'and':
+                                name.append(p_t[i][0].lower())
+                            else:
+                                if not name:
+                                    continue
+                                if any(mn in w.lower() for mn in name) or any(mn in a.lower() for mn in name):
+                                    continue
+                                if all(mn not in self.ignore for mn in name):
+                                    maybe_name = ' '.join([mn.capitalize() for mn in name])
+                                    p_map[a][maybe_name] += 1
+                                name = []
+        for a, w in self.winners.items():
+            ps = {k:j for k, j in sorted(p_map[a].items(), key=lambda item: item[1], reverse=True)[:10]}
+            print(f"{a}: {ps}")
 
             
 
 if __name__=="__main__":
     start_time = time.time()
-    dog = GoldenGlobesParser(2020)
+    dog = GoldenGlobesParser(2013)
     dog.process_tweets()
     print(f"{time.time() - start_time} seconds")
