@@ -65,7 +65,7 @@ class GoldenGlobesParser:
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series,']
         special = ['best', 'song']
-        replace = {'television': 'tv', 'musical': '', 'comedy': 'musical/comedy', 'limited':'', 'series':'limited/series'}
+        replace = {'television': 'tv', 'musical': '', 'comedy': 'musical/comedy', 'limited': '', 'series':'limited/series'}
         for original in self.OFFICIAL_AWARDS_1819:
             award = original
             split_original = award.split()
@@ -176,9 +176,12 @@ class GoldenGlobesParser:
         
         for i, tweet in enumerate(self.tweets):
 
+            if not i % 10:
+                continue
+
             chunked = None
             regexed = []
-            text = tweet['text']
+            text = tweet['text'].replace('elevision', 'v')
 
             for original, award in self.tweetized_awards.items():
 
@@ -218,9 +221,7 @@ class GoldenGlobesParser:
                             aw_map[award][' '.join([w.capitalize() for w in maybe_movie.split()])] += 1
 
         for original, award in self.tweetized_awards.items():
-            print(f'{original} -> {award}')
             if not aw_map[award]:
-                print('\n')
                 continue
             sorted_map = {e:f for e, f in sorted(aw_map[award].items(), key=lambda item: len(item[0]))}
             for person,count_a in sorted_map.items():
@@ -232,13 +233,9 @@ class GoldenGlobesParser:
                     if not p_count:
                         break
                     aw_map[award][person] += p_count
-
-            # sorted_award = [x[0] for x in sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)]
-            sorted_award = {x:y for x,y in sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)[:6]}
-            print(sorted_award)
-            # self.winners[original] = sorted_award[0]
-            
-            # print(f"The winner was {self.winners[original]}")
+                    aw_map[award][p] = 0
+            self.winners[original] = sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)[0][0]           
+            print(f"The winner was {self.winners[original]}")
 
     def extract_prenom(self):
         p_map = {}
@@ -290,13 +287,13 @@ class GoldenGlobesParser:
                         break
                     p_map[award][person] += p_count
 
-            sorted_award = [x[0] for x in sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)]
+            sorted_award = sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)
             print(sorted_award)
             print('\n')
             # self.presenters[original] = sorted_award[0]
 
 if __name__=="__main__":
     start_time = time.time()
-    dog = GoldenGlobesParser(2013)
+    dog = GoldenGlobesParser(2015)
     dog.process_tweets()
     print(f"{time.time() - start_time} seconds")
