@@ -15,68 +15,68 @@ OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - mu
                         'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 
                         'cecil b. demille award']
 
-parser = None
+parsers = {}
                        
 def get_hosts(year):
     '''Hosts is a list of one or more strings. Do NOT change the name
     of this function or what it returns.'''
-    global parser
-    if not parser:
-        parser = GoldenGlobesParser(year)
-        parser.process_tweets()
-        parser.process_awards()
-    hosts = parser.extract_host()
+    global parsers
+    if not parsers.get(year):
+        parsers[year] = GoldenGlobesParser(year)
+        parsers[year].process_tweets()
+        parsers[year].process_awards()
+    hosts = parsers[year].extract_host()
     return hosts
 
 def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
-    global parser
-    if not parser:
-        parser = GoldenGlobesParser(year)
-        parser.process_tweets()
-        parser.process_awards()
-    awards = parser.extract_awards()
+    global parsers
+    if not parsers.get(year):
+        parsers[year] = GoldenGlobesParser(year)
+        parsers[year].process_tweets()
+        parsers[year].process_awards()
+    awards = parsers[year].extract_awards()
     return awards
 
 def get_nominees(year):
     '''Nominees is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change
     the name of this function or what it returns.'''
-    global parser
-    if not parser:
-        parser = GoldenGlobesParser(year)
-        parser.process_tweets()
-        parser.process_awards()
-    if not parser.nominees:
-        parser.extract_prenom()
-    nominees = parser.nominees
+    global parsers
+    if not parsers.get(year):
+        parsers[year] = GoldenGlobesParser(year)
+        parsers[year].process_tweets()
+        parsers[year].process_awards()
+    if not parsers[year].nominees:
+        parsers[year].extract_prenom()
+    nominees = parsers[year].nominees
     return nominees
 
 def get_winner(year):
     '''Winners is a dictionary with the hard coded award
     names as keys, and each entry containing a single string.
     Do NOT change the name of this function or what it returns.'''
-    global parser
-    if not parser:
-        parser = GoldenGlobesParser(year)
-        parser.process_tweets()
-        parser.process_awards()
-    winners = parser.extract_winners()
+    global parsers
+    if not parsers.get(year):
+        parsers[year] = GoldenGlobesParser(year)
+        parsers[year].process_tweets()
+        parsers[year].process_awards()
+    winners = parsers[year].extract_winners()
     return winners
 
 def get_presenters(year):
     '''Presenters is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
-    global parser
-    if not parser:
-        parser = GoldenGlobesParser(year)
-        parser.process_tweets()
-        parser.process_awards()
-    if not parser.presenters:
-        parser.extract_prenom()
-    presenters = parser.presenters
+    global parsers
+    if not parsers.get(year):
+        parsers[year] = GoldenGlobesParser(year)
+        parsers[year].process_tweets()
+        parsers[year].process_awards()
+    if not parsers[year].presenters:
+        parsers[year].extract_prenom()
+    presenters = parsers[year].presenters
     return presenters
 
 def pre_ceremony():
