@@ -7,23 +7,13 @@ from collections import defaultdict
 
 class GoldenGlobesParser:
 
-    tweets = []
-
-    hosts = []
-    awards = []
-    winners = {}
-    presenters = defaultdict(str)
-    nominees = defaultdict(str)
-
     award_words = set(['tv', 'movie', 'wins', 'won', 'film', 'feature'])
     ignore = ['golden', 'globes', 'globe', 'goldenglobes', 'goldenglobe', 'gg2020']
-    tweetized_awards = {}
         
     # THIS LIST IS NOT RETURNED. IT IS USED TO FIND PRESENTERS, NOMINEES, AND WINNERS FOR ALL THE AWARDS IN ACCORDANCE WITH THE PROJECT GUIDELINES
     # WE ARE USING THIS LIST TO AVOID CASCADING ERROR
     OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - musical or comedy', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best performance by an actress in a motion picture - musical or comedy', 'best performance by an actor in a motion picture - musical or comedy', 'best performance by an actress in a supporting role in any motion picture', 'best performance by an actor in a supporting role in any motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best motion picture - animated', 'best motion picture - foreign language', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best television series - musical or comedy', 'best television limited series or motion picture made for television', 'best performance by an actress in a limited series or a motion picture made for television', 'best performance by an actor in a limited series or a motion picture made for television', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best performance by an actress in a television series - musical or comedy', 'best performance by an actor in a television series - musical or comedy', 'best performance by an actress in a supporting role in a series, limited series or motion picture made for television', 'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 'cecil b. demille award']
     OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
-    official_awards = []
 
     def __init__(self, year = 2020):
         self.year = year
@@ -31,6 +21,15 @@ class GoldenGlobesParser:
             self.official_awards = self.OFFICIAL_AWARDS_1315
         else:
             self.official_awards = self.OFFICIAL_AWARDS_1819
+
+        self.tweets = []
+        self.tweetized_awards = {}
+
+        self.hosts = []
+        self.awards = []
+        self.winners = {}
+        self.presenters = defaultdict(str)
+        self.nominees = defaultdict(str)
 
     def parse_json(self, file):
         tweets = []
@@ -74,12 +73,12 @@ class GoldenGlobesParser:
                             clone.insert(i, ' ')
                         tweet['text'] = tweet['text'].replace(h, ''.join(clone))
 
-        self.process_awards()
+        # self.process_awards()
 
         # self.extract_host()
         # self.extract_awards()
-        self.extract_winners()
-        self.extract_prenom()
+        # self.extract_winners()
+        # self.extract_prenom()
 
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series,']
@@ -228,8 +227,7 @@ class GoldenGlobesParser:
                 else:
                     if len(regexed) < 1:
                         r1 = re.search(r'".*?"', text.lower())
-                        r2 = re.search(r"'.*?'", text.lower())
-                        regexed = [r1, r2]
+                        regexed = [r1]
                     
                     for r in regexed:
                         if r:
@@ -247,53 +245,121 @@ class GoldenGlobesParser:
                 continue
             self.winners[original] = sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)[0][0]           
             # print(f"The winner was {self.winners[original]}")
-        print(self.winners)
+        # print(self.winners)
         return self.winners
 
     def extract_prenom(self):
-        p_map = defaultdict(dict)
-        # n_map = {}
+        p_map = {}
+        n_map = {}
         for original, award in self.tweetized_awards.items():
             p_map[original] = defaultdict(int)
-            # n_map[award] = defaultdict(int)
+            n_map[original] = defaultdict(int)
+
+        person_key = ['actor', 'actress', 'director', 'cecil']
+        present_keywords = [' present', ' handing', ' giving']
+        nominee_keywords = [' nominat', ' beat', 'empty-handed', ' instead of']
 
         for tweet in self.tweets:
             text = tweet['text']
             text_l = text.lower()
-            present_keywords = [' present', ' handing', ' giving']
-            chunked = None
+
+            tagged = None
             regexed = []
 
-            if any(p_k in text_l for p_k in present_keywords):
-                for a, w in self.winners.items():
-                    t_a = self.tweetized_awards[a]
-                    if self.match_phrase(text_l, w.replace(' ', '/').lower()) or self.match_phrase(text_l, t_a):
+            for award, winner in self.winners.items():
+                award_key = self.tweetized_awards[award]
+                winner_key = '/'.join([w for w in winner.split() if len(w) > 2])
 
-                        p_t = nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text))
+                if self.match_phrase(text_l, winner_key.lower()) or self.match_phrase(text_l, award_key):
+                    if any(p_k in text_l for p_k in present_keywords):
+                        if not tagged:
+                            tagged = nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text))
                         name = []
-                        for i in range(len(p_t)-1):
-                            if p_t[i][1] == "NNP":
-                                name.append(p_t[i][0].lower())
+                        for i in range(len(tagged)-1):
+                            if tagged[i][1] == "NNP":
+                                name.append(tagged[i][0].lower())
                             else:
                                 if not name:
                                     continue
-                                if any(mn in w.lower() for mn in name) or any(mn in a.lower() for mn in name):
+                                if any(mn in winner.lower() for mn in name) or any(mn in award.lower() for mn in name):
                                     continue
                                 if all(mn not in self.ignore for mn in name):
                                     maybe_name = ' '.join([mn.capitalize() for mn in name])
-                                    p_map[a][maybe_name] += 1
+                                    p_map[award][maybe_name] += 1
                                 name = []
+                    if any(n_k in text_l for n_k in nominee_keywords):
+                        if any(p in award_key for p in person_key):
+                            if not tagged:
+                                tagged = nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text))
+                            name = []
+                            for i in range(len(tagged)-1):
+                                if tagged[i][1] == "NNP":
+                                    name.append(tagged[i][0].lower())
+                                else:
+                                    if not name or len(name) <= 1:
+                                        name = []
+                                        continue
+                                    if all(len(mn) <= 2 for mn in name):
+                                        name = []
+                                        continue
+                                    if any(mn in winner.lower() for mn in name) or any(mn in award.lower() for mn in name):
+                                        name = []
+                                        continue
+                                    if all(mn not in self.ignore for mn in name):
+                                        maybe_name = ' '.join([mn.capitalize() for mn in name])
+                                        n_map[award][maybe_name] += 1
+                                    name = []
+                        else:
+                            if len(regexed) < 1:
+                                r1 = re.findall(r'".*"', text_l)
+                                r2 = re.findall(r"'[^s].*'", text_l)
+                                regexed = [r1, r2]
+                        
+                            for i, match in enumerate(regexed):
+                                for r in match:
+                                    split = r
+                                    if i == 0:
+                                        split = r.split('"')
+                                    else:
+                                        split = r.split("'")
+                                    for s in split:
+                                        maybe_movie = s.strip()
+                                        if s and len(maybe_movie) > 3:
+                                            if any(i in maybe_movie for i in self.ignore) or any(aw in maybe_movie for aw in self.award_words) or len(maybe_movie) > 30 or any(mn in winner.lower() for mn in maybe_movie.split()):
+                                                continue
 
-        for a, w in self.winners.items():
-            ps = {k:j for k, j in sorted(p_map[a].items(), key=lambda item: item[1], reverse=True)[:10]}
-            # sorted_presenters = sorted(p_map[a].items(), key=lambda item: item[1], reverse=True)
-            # if sorted_presenters:
-            #     self.presenters[a] = [ps.strip() for ps in sorted_presenters[0][0].split('and')]
-            # else:
-            #     self.presenters[a] = ['']
-            self.nominees[a] = ['', '', '', '', '']
-            print(f"{a}: {ps}\n")
+                                            n_map[award][' '.join([w for w in maybe_movie.split()])] += 1
 
+        for award, winner in self.winners.items():
+            # ps = {k:j for k, j in sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)[:10]}
+            sorted_presenters = sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)
+            if sorted_presenters:
+                self.presenters[award] = [ps.strip() for ps in sorted_presenters[0][0].split('and')]
+            else:
+                self.presenters[award] = ['']
+            # print(f"{award}: {ps}\n")
+            # ns = {k:j for k, j in sorted(n_map[award].items(), key=lambda item: item[1], reverse=True)[:10]}
+            ns = sorted(n_map[award].items(), key=lambda item: item[1], reverse=True)[:10]
+            # print(f"{award}: {ns}\n")
+            self.nominees[award] = [winner]
+
+            if 'cecil' in award:
+                continue
+            
+            for nominee in ns:
+                if len(self.nominees[award]) == 5:
+                    break
+
+                self.nominees[award].append(nominee[0])
+
+            while len(self.nominees[award]) < 5:
+                self.nominees[award].append(winner)
+
+    def get_presenters(self):
+        return self.presenters
+
+    def get_nominees(self):
+        return self.nominees
             
 
 if __name__=="__main__":

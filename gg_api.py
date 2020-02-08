@@ -48,9 +48,11 @@ def get_nominees(year):
         parsers[year] = GoldenGlobesParser(year)
         parsers[year].process_tweets()
         parsers[year].process_awards()
-    if not parsers[year].nominees:
+    if not parsers[year].winners:
+        parsers[year].extract_winners()
+    if not parsers[year].get_nominees():
         parsers[year].extract_prenom()
-    nominees = parsers[year].nominees
+    nominees = parsers[year].get_nominees()
     return nominees
 
 def get_winner(year):
@@ -58,11 +60,15 @@ def get_winner(year):
     names as keys, and each entry containing a single string.
     Do NOT change the name of this function or what it returns.'''
     global parsers
+    winners = {}
     if not parsers.get(year):
         parsers[year] = GoldenGlobesParser(year)
         parsers[year].process_tweets()
         parsers[year].process_awards()
-    winners = parsers[year].extract_winners()
+    if parsers[year].winners:
+        winners = parsers[year].winners
+    else:
+        winners = parsers[year].extract_winners()
     return winners
 
 def get_presenters(year):
@@ -74,9 +80,11 @@ def get_presenters(year):
         parsers[year] = GoldenGlobesParser(year)
         parsers[year].process_tweets()
         parsers[year].process_awards()
-    if not parsers[year].presenters:
+    if not parsers[year].winners:
+        parsers[year].extract_winners()
+    if not parsers[year].get_presenters():
         parsers[year].extract_prenom()
-    presenters = parsers[year].presenters
+    presenters = parsers[year].get_presenters()
     return presenters
 
 def pre_ceremony():
