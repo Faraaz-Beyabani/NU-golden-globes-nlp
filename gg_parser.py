@@ -12,6 +12,8 @@ class GoldenGlobesParser:
     hosts = []
     awards = []
     winners = {}
+    presenters = defaultdict(str)
+    nominees = defaultdict(str)
 
     award_words = set(['tv', 'movie', 'wins', 'won', 'film', 'feature'])
     ignore = ['golden', 'globes', 'globe', 'goldenglobes', 'goldenglobe', 'gg2020']
@@ -23,9 +25,9 @@ class GoldenGlobesParser:
     OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
     official_awards = []
 
-    def __init__(self, year = None):
-        self.year = year or 2020
-        if self.year == 2013 or self.year == 2015:
+    def __init__(self, year = 2020):
+        self.year = year
+        if year == 2013 or year == 2015 or year == '2013' or year == '2015':
             self.official_awards = self.OFFICIAL_AWARDS_1315
         else:
             self.official_awards = self.OFFICIAL_AWARDS_1819
@@ -45,8 +47,6 @@ class GoldenGlobesParser:
         nltk.download('maxent_ne_chunker')
         nltk.download('words')
 
-        punc = ['.', ',', '-', '\'', '"']
-
         with open(f"./data/gg{self.year}.json", encoding="utf8") as f:    
             self.tweets = self.parse_json(f)
 
@@ -56,39 +56,40 @@ class GoldenGlobesParser:
                     self.tweets.append(json.loads(str(line)))
 
         for tweet in self.tweets:
-            # print('&')
-            tweet['text'] = tweet['text'].replace('&amp;', 'and').replace('RT ','').replace('#','@')
+            tweet['text'] = tweet['text'].replace('&amp;', 'and').replace('RT ','')
 
-        # for tweet in self.tweets:
-        #     text = tweet['text']
-        #     if '#' in text:
-        #         hashtag = re.findall(r'\B#\w\w*', text)
-        #         if hashtag:
-        #             # print(hashtag)
-        #             for h in hashtag:
-        #                 phrase = h[1:]
-        #                 indices = []
-        #                 for i in range(len(phrase) - 1):
-        #                     if phrase[i].islower() and phrase[i+1].isupper():
-        #                         indices.append(i+1)
-        #                 clone = list(phrase)
-        #                 for i in indices[::-1]:
-        #                     clone.insert(i, ' ')
-        #                 tweet['text'].replace(h, ''.join(clone))
-        #                 print(tweet['text'])
+        for tweet in self.tweets:
+            text = tweet['text']
+            if '#' in text:
+                hashtag = re.findall(r'\B#\w\w*', text)
+                if hashtag:
+                    for h in hashtag:
+                        phrase = h[1:]
+                        indices = []
+                        for i in range(len(phrase) - 1):
+                            if phrase[i].islower() and phrase[i+1].isupper():
+                                indices.append(i+1)
+                        clone = list(phrase)
+                        for i in indices[::-1]:
+                            clone.insert(i, ' ')
+                        tweet['text'] = tweet['text'].replace(h, ''.join(clone))
+
+        with open('2015tweets.txt', 'w', encoding='utf8') as f:
+            for tweet in self.tweets:
+                f.write(tweet['text']+'\n')
 
         self.process_awards()
 
         # self.extract_host()
         # self.extract_awards()
         self.extract_winners()
-        self.extract_prenom()
+        # self.extract_prenom()
 
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series,']
         special = ['best', 'song']
         replace = {'television': 'tv', 'musical': '', 'comedy': 'musical/comedy', 'limited': '', 'series':'limited/series'}
-        for original in self.OFFICIAL_AWARDS_1819:
+        for original in self.official_awards:
             award = original
             split_original = award.split()
 
@@ -166,7 +167,7 @@ class GoldenGlobesParser:
         else:
             self.hosts = hosts[:2]
 
-        # print(self.hosts)
+        return self.hosts
     
     def extract_awards(self):
         dic = {}
@@ -187,7 +188,7 @@ class GoldenGlobesParser:
         for i, a in enumerate(self.awards):
             self.awards[i] = ' '.join(a.split()[1:-1])
 
-        # print(self.awards)
+        return self.awards
 
     def extract_winners(self):
         person_key = ['actor', 'actress', 'director', 'screenplay', 'cecil']
@@ -242,7 +243,9 @@ class GoldenGlobesParser:
                             aw_map[award][' '.join([w.capitalize() for w in maybe_movie.split()])] += 1
 
         for original, award in self.tweetized_awards.items():
+            print(original)
             if not aw_map[award]:
+                print('\n')
                 continue
             sorted_map = {e:f for e, f in sorted(aw_map[award].items(), key=lambda item: len(item[0]))}
             for person,count_a in sorted_map.items():
@@ -257,6 +260,8 @@ class GoldenGlobesParser:
                     aw_map[award][p] = 0
             self.winners[original] = sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)[0][0]           
             print(f"The winner was {self.winners[original]}")
+        
+        return self.winners
 
     def extract_prenom(self):
         p_map = defaultdict(dict)
@@ -267,7 +272,6 @@ class GoldenGlobesParser:
 
         for tweet in self.tweets:
             text = tweet['text'].replace(',',' and')
-            # text = ''.join(c for c in text if c.isalpha() or c == ' ')
             chunked = None
             regexed = []
 
@@ -276,7 +280,6 @@ class GoldenGlobesParser:
                     t_a = self.tweetized_awards[a]
                     if self.match_phrase(text, w.replace(' ', '/')) or self.match_phrase(text, t_a):
 
-                        print(text)
                         p_t = nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text))
                         name = []
                         for i in range(len(p_t)-1):
@@ -291,14 +294,21 @@ class GoldenGlobesParser:
                                     maybe_name = ' '.join([mn.capitalize() for mn in name])
                                     p_map[a][maybe_name] += 1
                                 name = []
+
         for a, w in self.winners.items():
-            ps = {k:j for k, j in sorted(p_map[a].items(), key=lambda item: item[1], reverse=True)[:10]}
-            print(f"{a}: {ps}")
+            # ps = {k:j for k, j in sorted(p_map[a].items(), key=lambda item: item[1], reverse=True)[:10]}
+            sorted_presenters = sorted(p_map[a].items(), key=lambda item: item[1], reverse=True)
+            if sorted_presenters:
+                self.presenters[a] = [ps.strip() for ps in sorted_presenters[0][0].split('and')]
+            else:
+                self.presenters[a] = ['']
+            self.nominees[a] = ['', '', '', '', '']
+            # print(f"{a}: {ps}")
 
             
 
 if __name__=="__main__":
     start_time = time.time()
-    dog = GoldenGlobesParser(2013)
+    dog = GoldenGlobesParser(2015)
     dog.process_tweets()
     print(f"{time.time() - start_time} seconds")
