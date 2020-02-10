@@ -9,7 +9,7 @@ If not on Windows, please activate the `virtual` virtual environment by running 
 
 `pip install -r requirements.txt`
 
-Make sure that all relevant and necessary JSON files are located in the ./data/ folder.
+Make sure that all relevant and necessary JSON files are located in the same folder as gg_parser.py.
 
 Running autograder.py will sequentially print the host(s), awards, and then the winner, presenters, and nominees for each award, followed by the best dressed and worst dressed for the whole event.
 
