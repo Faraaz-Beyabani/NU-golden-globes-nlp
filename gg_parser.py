@@ -140,6 +140,7 @@ class GoldenGlobesParser:
                 f.write(f'Award: {award}\n')
                 f.write(f'Nominees: {temp}\n')
                 f.write(f'Winner: {temp_n}\n')
+                f.write(f'Presenter(s): {self.presenters[award]}\n')
                 f.write('\n')
             f.write('\n')
             for rc, person in self.rc_results.items():
