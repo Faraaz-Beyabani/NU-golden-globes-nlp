@@ -1,13 +1,16 @@
+import sys
 import json
-import nltk
 import re
 import time
+
+import nltk
+from imdb import IMDb
 from nltk.tokenize import sent_tokenize, word_tokenize
 from collections import defaultdict
 
 class GoldenGlobesParser:
 
-    award_words = set(['tv', 'movie', 'wins', 'won', 'film', 'feature'])
+    award_words = set(['tv', 'movie', 'wins', 'won', 'film', 'feature', 'award'])
     ignore = ['golden', 'globes', 'globe', 'goldenglobes', 'goldenglobe', 'gg2020']
         
     # THIS LIST IS NOT RETURNED. IT IS USED TO FIND PRESENTERS, NOMINEES, AND WINNERS FOR ALL THE AWARDS IN ACCORDANCE WITH THE PROJECT GUIDELINES
@@ -72,13 +75,6 @@ class GoldenGlobesParser:
                         for i in indices[::-1]:
                             clone.insert(i, ' ')
                         tweet['text'] = tweet['text'].replace(h, ''.join(clone))
-
-        # self.process_awards()
-
-        # self.extract_host()
-        # self.extract_awards()
-        # self.extract_winners()
-        # self.extract_prenom()
 
     def process_awards(self):
         ignore = ['award', 'motion', 'performance', 'picture', 'original', 'series,']
@@ -161,26 +157,33 @@ class GoldenGlobesParser:
         else:
             self.hosts = hosts[:2]
 
+        print(f'{self.year} Hosts: {self.hosts}\n')
+
         return self.hosts
     
     def extract_awards(self):
         dic = {}
         for tweet in self.tweets:
             text = tweet['text']
-            match = re.search(r'for best .* for', text.lower())
+            match = re.search(r'Best.*?goes', text)
             if match:
                 result = ''.join(c for c in match.group() if c.isalpha() or c == ' ')
-                result = result.replace('  ',' ')
+                result = result.replace('  ',' ').lower().replace('tv','television')
                 if result in dic:
                     dic[result][1] += 1
                 else:
-                    dic[result] = [result, 0]
+                    dic[result] = [result, 1]
         for key in dic:
-            if dic[key][1] > 3:
+            
+            if dic[key][1] > 6 * len(self.tweets) / 170000:
                 self.awards.append(dic[key][0])
+                
 
+        print(f'Awards:')
         for i, a in enumerate(self.awards):
-            self.awards[i] = ' '.join(a.split()[1:-1])
+            self.awards[i] = ' '.join(a.split()[:-1])
+            print(self.awards[i])
+        print('\n')
 
         return self.awards
 
@@ -239,13 +242,9 @@ class GoldenGlobesParser:
                             aw_map[award][' '.join([w for w in maybe_movie.split()])] += 1
 
         for original, award in self.tweetized_awards.items():
-            # print(original)
             if not aw_map[award]:
-                # print('\n')
                 continue
             self.winners[original] = sorted(aw_map[award].items(), key=lambda item: item[1], reverse=True)[0][0]           
-            # print(f"The winner was {self.winners[original]}")
-        # print(self.winners)
         return self.winners
 
     def extract_prenom(self):
@@ -284,7 +283,7 @@ class GoldenGlobesParser:
                                 if any(mn in winner.lower() for mn in name) or any(mn in award.lower() for mn in name):
                                     continue
                                 if all(mn not in self.ignore for mn in name):
-                                    maybe_name = ' '.join([mn.capitalize() for mn in name])
+                                    maybe_name = ' '.join([mn for mn in name])
                                     p_map[award][maybe_name] += 1
                                 name = []
                     if any(n_k in text_l for n_k in nominee_keywords):
@@ -306,14 +305,13 @@ class GoldenGlobesParser:
                                         name = []
                                         continue
                                     if all(mn not in self.ignore for mn in name):
-                                        maybe_name = ' '.join([mn.capitalize() for mn in name])
+                                        maybe_name = ' '.join([mn for mn in name])
                                         n_map[award][maybe_name] += 1
                                     name = []
                         else:
                             if len(regexed) < 1:
                                 r1 = re.findall(r'".*"', text_l)
-                                r2 = re.findall(r"'[^s].*'", text_l)
-                                regexed = [r1, r2]
+                                regexed = [r1]
                         
                             for i, match in enumerate(regexed):
                                 for r in match:
@@ -330,40 +328,117 @@ class GoldenGlobesParser:
 
                                             n_map[award][' '.join([w for w in maybe_movie.split()])] += 1
 
+        ia = IMDb()
+
         for award, winner in self.winners.items():
-            # ps = {k:j for k, j in sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)[:10]}
-            sorted_presenters = sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)
-            if sorted_presenters:
-                self.presenters[award] = [ps.strip() for ps in sorted_presenters[0][0].split('and')]
-            else:
-                self.presenters[award] = ['']
-            # print(f"{award}: {ps}\n")
-            # ns = {k:j for k, j in sorted(n_map[award].items(), key=lambda item: item[1], reverse=True)[:10]}
+            print(f'{award}')
+            print(f'Winner: {winner}')
+
             ns = sorted(n_map[award].items(), key=lambda item: item[1], reverse=True)[:10]
-            # print(f"{award}: {ns}\n")
-            self.nominees[award] = [winner]
+            self.nominees[award] = set()
 
             if 'cecil' in award:
                 continue
+
+            if any(p in award_key for p in person_key):
+                for nominee in ns:
+                    if len(self.nominees[award]) == 4:
+                        break
+
+                    q = ia.search_person(nominee[0])
+
+                    if q:
+                        self.nominees[award].add(q[0]['name'])
+
+            else:
+                for nominee in ns:
+                    if len(self.nominees[award]) == 4:
+                        break
+
+                    q = ia.search_movie(nominee[0])
+
+                    if q:
+                        self.nominees[award].add(q[0]['name'])
+
+            print(f'Nominees: {self.nominees[award] or {}}')
             
-            for nominee in ns:
-                if len(self.nominees[award]) == 5:
+            #///////////////////////////////////////////
+
+            sorted_presenters = sorted(p_map[award].items(), key=lambda item: item[1], reverse=True)
+            self.presenters[award] = set()
+
+            for presenter in sorted_presenters:
+                if len(self.presenters[award]) == 2:
                     break
 
-                self.nominees[award].append(nominee[0])
+                q = ia.search_person(presenter[0])
 
-            while len(self.nominees[award]) < 5:
-                self.nominees[award].append(winner)
+                if q:
+                    self.presenters[award].add(q[0]['name'])
+
+            print(f'Presenter: {self.presenters[award] or {}}\n')
 
     def get_presenters(self):
         return self.presenters
 
     def get_nominees(self):
         return self.nominees
+
+    def red_carpet(self):
+        categories = ['best dressed', 'worst dressed']
+        rc_map = {c:defaultdict(int) for c in categories}
+        for tweet in self.tweets:
+            text = tweet['text']
+            text_l = text.lower()
+            tagged = None
+
+            for categ in categories:
+                if categ in text_l:
+                    if not tagged:
+                        tagged = nltk.pos_tag(nltk.tokenize.casual.TweetTokenizer(strip_handles=True).tokenize(text))
+                    name = []
+                    for i in range(len(tagged)-1):
+                        if tagged[i][1] == "NNP":
+                            name.append(tagged[i][0].lower())
+                        else:
+                            if not name or len(name) <= 1:
+                                name = []
+                                continue
+                            if all(len(mn) <= 2 for mn in name):
+                                name = []
+                                continue
+                            if all(mn not in self.ignore for mn in name):
+                                maybe_name = ' '.join([mn for mn in name])
+                                rc_map[categ][maybe_name] += 1
+                            name = []
             
+        ia = IMDb()
+        for categ in categories:
+            rc = sorted(rc_map[categ].items(), key=lambda item: item[1], reverse=True)[:10]
+            for person, votes in rc:
+                q = ia.search_person(person)
+                if q:
+                    print(f'\n{categ}:')
+                    print(f'{q[0]["name"]}\n')
+                    break    
 
 if __name__=="__main__":
     start_time = time.time()
-    dog = GoldenGlobesParser(2020)
-    dog.process_tweets()
+    parser = None
+
+    if len(sys.argv) > 1:
+        GoldenGlobesParser(sys.argv[1])
+    else:
+        GoldenGlobesParser(2020)
+    
+    parser.process_tweets()
+    parser.process_awards()
+
+    parser.extract_host()
+    parser.extract_awards()
+    parser.extract_winners()
+    parser.extract_prenom()
+
+    parser.red_carpet()
+    
     print(f"{time.time() - start_time} seconds")
