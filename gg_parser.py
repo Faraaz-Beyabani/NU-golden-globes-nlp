@@ -19,8 +19,8 @@ class GoldenGlobesParser:
     OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
 
     def __init__(self, year = 2020):
-        self.year = year
-        if year == 2013 or year == 2015 or year == '2013' or year == '2015':
+        self.year = int(year)
+        if year == 2013 or year == 2015:
             self.official_awards = self.OFFICIAL_AWARDS_1315
         else:
             self.official_awards = self.OFFICIAL_AWARDS_1819
@@ -49,11 +49,11 @@ class GoldenGlobesParser:
         nltk.download('maxent_ne_chunker')
         nltk.download('words')
 
-        with open(f"./data/gg{self.year}.json", encoding="utf8") as f:    
+        with open(f"./gg{self.year}.json", encoding="utf8") as f:    
             self.tweets = self.parse_json(f)
 
         if len(self.tweets) == 0:
-            with open(f"./data/gg{self.year}.json", encoding="utf8") as f:
+            with open(f"./gg{self.year}.json", encoding="utf8") as f:
                 for line in f:
                     self.tweets.append(json.loads(str(line)))
 
@@ -157,7 +157,7 @@ class GoldenGlobesParser:
         else:
             self.hosts = hosts[:2]
 
-        print(f'{self.year} Hosts: {self.hosts}\n')
+        print(f'\n{self.year} Hosts: {self.hosts}\n')
 
         return self.hosts
     
@@ -332,7 +332,7 @@ class GoldenGlobesParser:
 
         for award, winner in self.winners.items():
             print(f'{award}')
-            print(f'Winner: {winner}')
+            print(f'Winner: {" ".join([w.capitalize() for w in winner.split()])}')
 
             ns = sorted(n_map[award].items(), key=lambda item: item[1], reverse=True)[:10]
             self.nominees[award] = set()
@@ -376,7 +376,8 @@ class GoldenGlobesParser:
                 if q:
                     self.presenters[award].add(q[0]['name'])
 
-            print(f'Presenter: {self.presenters[award] or {}}\n')
+            print(f'Presenters: {self.presenters[award] or {}}')
+            print('\n')
 
     def get_presenters(self):
         return self.presenters
@@ -413,12 +414,13 @@ class GoldenGlobesParser:
                             name = []
             
         ia = IMDb()
+        print('\n')
         for categ in categories:
             rc = sorted(rc_map[categ].items(), key=lambda item: item[1], reverse=True)[:10]
-            for person, votes in rc:
+            for person, _ in rc:
                 q = ia.search_person(person)
                 if q:
-                    print(f'\n{categ}:')
+                    print(f'{categ}:')
                     print(f'{q[0]["name"]}\n')
                     break    
 
@@ -427,9 +429,9 @@ if __name__=="__main__":
     parser = None
 
     if len(sys.argv) > 1:
-        GoldenGlobesParser(sys.argv[1])
+        parser = GoldenGlobesParser(sys.argv[1])
     else:
-        GoldenGlobesParser(2020)
+        parser = GoldenGlobesParser(2020)
     
     parser.process_tweets()
     parser.process_awards()
