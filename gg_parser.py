@@ -33,6 +33,7 @@ class GoldenGlobesParser:
         self.winners = {}
         self.presenters = defaultdict(str)
         self.nominees = defaultdict(str)
+        self.rc_results = {'best dressed': '', 'worst dressed': ''}
 
     def parse_json(self, file):
         tweets = []
@@ -123,6 +124,29 @@ class GoldenGlobesParser:
                 return False
 
         return True
+
+    def write_readable(self):
+        with open(f'./human_readable_{self.year}.txt', 'w', encoding='utf8') as f:
+            f.write(f"Host(s): {self.hosts}\n")
+            f.write('\n')
+            for award in self.awards:
+                f.write(award + '\n')
+            f.write('\n')
+            for award in self.official_awards:
+                temp = list(self.nominees[award])
+                temp_n = self.winners[award]
+                temp_n = ' '.join([n.capitalize() for n in temp_n.split()])
+                temp.append(temp_n)
+                f.write(f'Award: {award}\n')
+                f.write(f'Nominees: {temp}\n')
+                f.write(f'Winner: {temp_n}\n')
+                f.write('\n')
+            f.write('\n')
+            for rc, person in self.rc_results.items():
+                f.write(f'{rc}:\n')
+                f.write(f'{person}\n')
+                f.write('\n')
+
         
     def extract_host(self):
         host_count = {}
@@ -379,6 +403,9 @@ class GoldenGlobesParser:
             print(f'Presenters: {self.presenters[award] or {}}')
             print('\n')
 
+            self.red_carpet()
+            self.write_readable()
+
     def get_presenters(self):
         return self.presenters
 
@@ -420,9 +447,8 @@ class GoldenGlobesParser:
             for person, _ in rc:
                 q = ia.search_person(person)
                 if q:
-                    print(f'{categ}:')
-                    print(f'{q[0]["name"]}\n')
-                    break    
+                    self.rc_results[categ] = q[0]["name"]
+                    break
 
 if __name__=="__main__":
     start_time = time.time()
@@ -440,7 +466,5 @@ if __name__=="__main__":
     parser.extract_awards()
     parser.extract_winners()
     parser.extract_prenom()
-
-    parser.red_carpet()
     
     print(f"{time.time() - start_time} seconds")

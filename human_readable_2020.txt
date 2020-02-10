@@ -1,0 +1,116 @@
+Host(s): ['Ricky Gervais']
+
+best motion picture drama
+best television series drama
+
+Award: best motion picture - drama
+Nominees: ['Irish Manzano', 'Quentin Tarantino', 'Michael Manna', 'Katerina Moutsatsou', '1917']
+Winner: 1917
+
+Award: best motion picture - musical or comedy
+Nominees: ['Sicily Johnson   nickname', 'Irish Manzano', 'Parma Calcio 1913', 'Michael Manna', 'Once Upon A Time In Hollywood']
+Winner: Once Upon A Time In Hollywood
+
+Award: best performance by an actress in a motion picture - drama
+Nominees: ['Kyle Arrington', 'Micheal Ward', 'Scarlett Johansson', 'Elisabeth Moss', 'Renée Zellweger']
+Winner: Renée Zellweger
+
+Award: best performance by an actor in a motion picture - drama
+Nominees: ['Brian Cox', 'Kit Harrington', 'Surprise', 'Beyoncé', 'Joaquin Phoenix']
+Winner: Joaquin Phoenix
+
+Award: best performance by an actress in a motion picture - musical or comedy
+Nominees: ['New Haven Free Public Library', 'Micheal Ward', 'Taron Egerton', 'Ana de Armas', 'Awkwafina']
+Winner: Awkwafina
+
+Award: best performance by an actor in a motion picture - musical or comedy
+Nominees: ['Elton John', 'Leonardo DiCaprio', 'Eddie Murphy', 'Hellyeah', 'Taron Egerton']
+Winner: Taron Egerton
+
+Award: best performance by an actress in a supporting role in any motion picture
+Nominees: ['Michelle Williams', 'Jennifer Lopez', 'Greta Gerwig', 'Little Women', 'Laura Dern']
+Winner: Laura Dern
+
+Award: best performance by an actor in a supporting role in any motion picture
+Nominees: ['Anthony Hopkins', 'Tom Hanks', 'Al Pacino', 'Leonardo DiCaprio', 'Brad Pitt']
+Winner: Brad Pitt
+
+Award: best director - motion picture
+Nominees: ['Martin Scorsese', 'Quentin Tarantino', 'Greta Gerwig', 'Todd Phillips', 'Sam Mendes']
+Winner: Sam Mendes
+
+Award: best screenplay - motion picture
+Nominees: ['Irish Manzano', 'Parma Calcio 1913', 'Michael Manna', 'Sicily Johnson   nickname', 'Once Upon A Time In Hollywood']
+Winner: Once Upon A Time In Hollywood
+
+Award: best motion picture - animated
+Nominees: ['Unknown Hinson', 'Janne Engblom', 'Live Action', 'Missing Link']
+Winner: Missing Link
+
+Award: best motion picture - foreign language
+Nominees: ['Parasite']
+Winner: Parasite
+
+Award: best original score - motion picture
+Nominees: ['Parma Calcio 1913', 'Katerina Moutsatsou', 'Charlene Polite', 'The 1975', 'Joker']
+Winner: Joker
+
+Award: best original song - motion picture
+Nominees: ['Nick Offerman', 'Mek', 'Hustler', 'Janne Engblom', 'Im Gonna Love Me Again']
+Winner: Im Gonna Love Me Again
+
+Award: best television series - drama
+Nominees: ['Succession']
+Winner: Succession
+
+Award: best television series - musical or comedy
+Nominees: ['Fleabag']
+Winner: Fleabag
+
+Award: best television limited series or motion picture made for television
+Nominees: ['Fleabag']
+Winner: Fleabag
+
+Award: best performance by an actress in a limited series or a motion picture made for television
+Nominees: ['Awkwafina', 'Eve Winstanley', 'Musical-Ensemble Falco Meets Amadeus', 'Sandra Oh', 'Michelle Williams']
+Winner: Michelle Williams
+
+Award: best performance by an actor in a limited series or a motion picture made for television
+Nominees: ['Scott Morrison', 'Elliot Anderson', 'Florence Pugh', 'Ana de Armas', 'Russell Crowe']
+Winner: Russell Crowe
+
+Award: best performance by an actress in a television series - drama
+Nominees: ['Don Gilet', 'Millie Bobby Brown', 'Musical-Ensemble Falco Meets Amadeus', 'Jennifer Aniston', 'Olivia Colman']
+Winner: Olivia Colman
+
+Award: best performance by an actor in a television series - drama
+Nominees: ['Bassi The Separatisti', 'Elliot Anderson', 'Success Akpojotor', 'Ana de Armas', 'Brian Cox']
+Winner: Brian Cox
+
+Award: best performance by an actress in a television series - musical or comedy
+Nominees: ['Awkwafina', 'Emma Thompson', 'Eve Winstanley', 'Sandra Oh', 'Phoebe Waller-bridge']
+Winner: Phoebe Waller-bridge
+
+Award: best performance by an actor in a television series - musical or comedy
+Nominees: ['Bill Hader', 'Ben Platt', 'Michael Douglas', 'New Jersey Mass Choir', 'Ramy Youssef']
+Winner: Ramy Youssef
+
+Award: best performance by an actress in a supporting role in a series, limited series or motion picture made for television
+Nominees: ['Meryl Streep', 'Kate McKinnon', 'Joey King', 'Patricia Arquette']
+Winner: Patricia Arquette
+
+Award: best performance by an actor in a supporting role in a series, limited series or motion picture made for television
+Nominees: ['Eve Speciall', 'Sarah Bolger', 'Stellan Skarsgård']
+Winner: Stellan Skarsgård
+
+Award: cecil b. demille award
+Nominees: ['Tom Hanks']
+Winner: Tom Hanks
+
+
+best dressed:
+Jennifer Aniston
+
+worst dressed:
+Jennifer Lopez
+
