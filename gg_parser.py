@@ -191,26 +191,34 @@ class GoldenGlobesParser:
         for tweet in self.tweets:
             text = tweet['text']
             match = re.search(r'Best.*?goes', text)
+            match2 = re.search(r'for (B|b)est.*? for', text)
             if match:
                 result = ''.join(c for c in match.group() if c.isalpha() or c == ' ')
                 result = result.replace('  ',' ').lower().replace('tv','television')
+                result = ' '.join(result.split()[:-1])
+                if result in dic:
+                    dic[result][1] += 1
+                else:
+                    dic[result] = [result, 1]
+            elif match2:
+                result = ''.join(c for c in match2.group() if c.isalpha() or c == ' ')
+                result = result.replace('  ',' ').lower().replace('tv','television')
+                result = result[4:-4]
                 if result in dic:
                     dic[result][1] += 1
                 else:
                     dic[result] = [result, 1]
         for key in dic:
-            
             if dic[key][1] > 6 * len(self.tweets) / 170000:
                 self.awards.append(dic[key][0])
+                print(f"{dic[key][0]}: {dic[key][1]}")
                 
 
-        print(f'Awards:')
         for i, a in enumerate(self.awards):
-            self.awards[i] = ' '.join(a.split()[:-1])
-            print(self.awards[i])
-        print('\n')
+            self.awards[i] = a
 
         return self.awards
+
 
     def extract_winners(self):
         person_key = ['actor', 'actress', 'director', 'cecil']
